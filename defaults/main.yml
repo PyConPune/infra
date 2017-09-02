@@ -1,0 +1,8 @@
+---
+pgsql_pkg:
+    - postgresql96
+    - postgresql96-devel
+    - postgresql96-contrib
+    - postgresql96-server
+
+pgsql_dbname: pycon-prod
