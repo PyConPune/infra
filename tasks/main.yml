@@ -1,15 +1,7 @@
 - name: Install Fedora packages
   package: 
     name: "{{ item }}"
-  with_items:
-    - git-core
-    - make
-    - gcc
-    - python-devel
-    - python-pip
-    - python-psycopg2
-    - openssl-devel
-    - libselinux-python
+  with_items: "{{ dnf_pkg }}"
 
 - name: Install postgresql
   package:
