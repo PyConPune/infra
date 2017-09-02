@@ -1,0 +1,18 @@
+---
+dnf_pkg:
+    - git-core
+    - make
+    - gcc
+    - python-devel
+    - python-pip
+    - python-psycopg2
+    - openssl-devel
+    - libselinux-python
+
+pgsql_pkg:
+    - postgresql96
+    - postgresql96-devel
+    - postgresql96-contrib
+    - postgresql96-server
+
+pgsql_dbname: pycon-prod

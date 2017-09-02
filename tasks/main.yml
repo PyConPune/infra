@@ -1,0 +1,107 @@
+- name: Install Fedora packages
+  package: 
+    name: "{{ item }}"
+  with_items: "{{ dnf_pkg }}"
+
+- name: Install postgresql
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ pgsql_pkg }}"
+
+- name: Initiate database
+  command: service postgresql initdb
+            creates=/var/lib/pgsql/9.6/data/postgresql.conf
+
+- name: enable pgsql service
+  service:
+    name: postgresql
+    enabled: yes
+
+- name: start pgsql service
+  service:
+    name: postgresql
+    state: started
+
+- name: Ensure PostgreSQL is listening on all localhost
+  lineinfile: dest=/var/lib/pgsql/9.6/data/postgresql.conf
+              regexp='^#?listen_addresses\s*='
+              line="listen_addresses = '127.0.0.1'"
+              state=present
+  notify: restart postgresql
+
+- lineinfile: dest=/var/lib/pgsql/9.6/data/pg_hba.conf
+              regexp='host\s+all\s+all\s+127.0.0.1/32\s+md5'
+              line='host all all 127.0.0.1/32 md5'
+              insertbefore=BOF
+  notify: restart postgresql
+
+- name: Give the vagrant user permission to database
+  postgresql_user: name=vagrant role_attr_flags=SUPERUSER
+  become: yes
+  become_user: postgres
+
+- name: Upgrade virtualenv to latest version
+  shell: '[ -x /usr/local/bin/virtualenv ] || pip install -U virtualenv'
+
+- name: Install app dependencies in a virtualenv
+  pip:
+    requirements=/vagrant/requirements.txt
+    virtualenv=/home/vagrant
+  become: yes
+  become_user: vagrant
+
+- name: Make "vagrant" shell auto-activate the virtual environment
+  lineinfile:
+    dest=/home/vagrant/.bashrc
+    line='source $HOME/bin/activate'
+
+- name: Create pycon-prod database role to avoid errors during prod import
+  become: yes
+  become_user: postgres
+  postgresql_user: db=template1 name="{{ pgsql_dbname }}"
+
+- name: ensure database is created
+  become: yes
+  become_user: postgres
+  postgresql_db:
+    name: "{{ pgsql_dbname }}"
+
+- name: Create application database "pycon"
+  become: yes
+  become_user: postgres
+  register: database_creation
+  postgresql_db: name=pycon
+                  encoding=UTF8
+                  lc_collate=en_US.UTF-8
+                  lc_ctype=en_US.UTF-8
+                  template=template0
+
+- name: Migrate the application database if we just created it
+  become: yes
+  become_user: vagrant
+  when: database_creation | changed
+  shell: /home/vagrant/bin/python manage.py migrate
+          chdir=/vagrant
+
+- name: Copy db backup script and make it executable
+  become: yes
+  become_user: vagrant
+  copy:
+    src: db_backup.sh
+    dest: /home/vagrant/db_backup.sh
+    owner: vagrant
+    group: vagrant
+    mode: 0755
+
+- name: Add cron for db backup
+  become: yes
+  become_user: vagrant
+  cron: minute="0"
+        hour="5,2"
+        job="/home/vagrant/db_backup.sh"
+
+- name: Make bash history more sane
+  lineinfile:
+    dest: /home/vagrant/.bashrc
+    line: 'HISTCONTROL=erasedups; unset HISTFILE'
