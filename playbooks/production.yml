@@ -1,0 +1,5 @@
+- name: Basic system configuration
+  hosts: all
+
+  roles:
+  - packages
