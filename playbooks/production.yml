@@ -1,3 +1,5 @@
+---
+
 - name: Basic system configuration
   hosts: all
 
