@@ -1,0 +1,9 @@
+---
+
+git_repo: https://github.com/PyConPune/pune.pycon.org.git
+
+project_name: pyconpune
+project_path: /srv/pycon
+application_name: pyconpune
+
+virtualenv_python_version: python3.6

@@ -1,0 +1,15 @@
+- name: Clone the PyCon Pune webapp
+  git:
+    repo: "{{ git_repo }}"
+    dest: "{{ project_path }}"
+    update: no
+  tags:
+    - setup
+    - git
+
+- name: Delete all *.pyc files
+  command: find -name "*.pyc" -delete
+  args:
+    chdir: "{{ project_path }}"
+  tags:
+    - git
